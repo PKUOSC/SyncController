@@ -1,0 +1,13 @@
+{
+    "mirrors": [
+        {
+            "id": "manjaro.",
+            "schedule": "*/5 * * * * *",
+            "provider": "shell",
+            "params": {
+                "cmd": "./test.sh 233"
+            }
+        }
+    ],
+    "log_dir": "/tmp"
+}
