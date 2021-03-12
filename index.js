@@ -8,9 +8,9 @@ const schedule = require('node-schedule');
 const events = require('events');
 const child_process = require('child_process');
 
-
 var config = require('./config.js');
-var status = fs.existsSync('./status.json') ? require('./status.json') : {};
+var status_path = path.join(config.base_dir,'status.json')
+var status = fs.existsSync(status_path) ? require('./status.json') : {};
 var scheds = {}
 
 function getDefaultLogPath(id) {
@@ -33,14 +33,14 @@ var providers = {
 
         args.push('2>&1')
 
+        logpath = getDefaultLogPath(id)
+        args.push(`> ${logpath} 2>&1`)
+
         return new Promise((resolve) => {
             child_process.exec(args.join(' '), function(err, stdout, stderr) {
-                fs.writeFileSync(getDefaultLogPath(id),stdout,(error)=>{
-                    if(error)
-                        console.log(`An error occured while writing log of ${id}`,error)
-                })
+                out=fs.readFileSync(logpath).toString()
                 if(!err)
-                    status[id].diskUsage = (/Total file size: (.*) bytes/).exec(stdout)[1]
+                    status[id].diskUsage = (/Total file size: (.*) bytes/).exec(out)[1]
                 resolve(err)
             })
         })
@@ -59,8 +59,6 @@ var providers = {
     }
 }
 
-console.log(getDefaultLogPath('id'))
-
 function writeJson(v, file) {
     fs.writeFileSync(file, JSON.stringify(v))
 }
@@ -77,7 +75,7 @@ function jobWrapper(run_queue, job) {
                 status[job.id].state = 'done'
                 status[job.id].lastSyncTime = Date.now();
             }
-            writeJson(status, 'status.json')
+            writeJson(status, status_path)
             console.log(`${job.id} done`)
             callback();
         }}, ()=>{})
@@ -91,7 +89,7 @@ function SchedRunner() {
         t = config.mirrors[i]
 
         status[t.id] = Object.assign({
-            'status': 'done',
+            'state': 'done',
             'lastSyncTime': 0,
             'nextSyncTime': 0,
             'diskUsage': null
@@ -103,6 +101,8 @@ function SchedRunner() {
 
         console.log(`added mirror job ${t.id}`)
         scheds[t.id] = schedule.scheduleJob(t.schedule,jobWrapper(run_queue, t))
+
+        status[t.id]['nextSyncTime'] = scheds[t.id].nextInvocation().getTime()
     }
 }
 
@@ -121,9 +121,11 @@ function Server() {
 
 (()=>{
     process.on('SIGINT',() => {
-        writeJson(status,'status.json')
+        writeJson(status,status_path)
         process.exit()
     })
+    console.log('running sync backend....')
+    console.log(config)
     SchedRunner()
     Server()
 })()

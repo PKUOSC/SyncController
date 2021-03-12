@@ -1,3 +1,4 @@
+path = require('path');
 const default_config = {
     'mirrors': [],
     'concurrency': 2,
@@ -6,6 +7,7 @@ const default_config = {
     'rsync': {
         'command': 'rsync -avHh --delete --delete-after --delay-updates --safe-links --stats --no-o --no-g'
     },
+    'base_dir': '/tmp',
     'port':3000
 }
 
