@@ -6,15 +6,7 @@ const db = require("./db");
 
 module.exports = () => {
     const app = express();
-    // app.route('/stat').all(nocache()).get(
-    //     async (req,res) => {res.json(status)}
-    // )
-    // app.route('/config').all(nocache()).get(
-    //     async (req,res) => {res.json(config)}
-    // )
-    // app.listen(config.port, () => {
-    //     console.log(`SyncMaster listening on port ${config.port}`)
-    // })
+
     app.route('/status').all(nocache()).get(
         async (req,res) => {res.json(await db.getStatus())}
     )
@@ -39,5 +31,7 @@ module.exports = () => {
         }
     )
 
-    app.listen(port)
+    app.listen(port, () => {
+        console.log(`Sync Master listening on ${port}`)
+    })
 }

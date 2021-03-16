@@ -1,0 +1,12 @@
+[Unit]
+Description=Sync Controller
+After=network.target
+
+[Service]
+User=syncd
+Restart=on-failure
+WorkingDirectory=/data/backend-ng
+ExecStart=node /data/backend-ng/index.js
+
+[Install]
+WantedBy=multi-user.target

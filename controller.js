@@ -31,20 +31,6 @@ class Controller {
             
             console.log(`adding job ${t.id}`);
 
-            // db.exists(t.id).then(
-            //     (ret) => {
-            //         if(!ret) {
-            //             return db.insert(t.id)
-            //         } else
-            //             db.get('state',t.id).then(
-            //                 (ret) => {
-            //                     if(ret === 'sync')
-            //                         db.set('state','error',t.id)
-            //                 }
-            //             )
-            //     }
-            // )
-
             (async (id)=>{
                 if(await db.exists(id)) {
                     if(await db.get('state',id)==='sync') {
@@ -61,13 +47,11 @@ class Controller {
                 ((id)=>{return () => {this.start(id);}})(t.id));
         
         }
-        console.log(this.jobs)
     }
 
     exec(args, logPath, id) {
         args = args.concat(['2>&1',`>${logPath}`])
         var job = this.jobs[id]
-        console.log(job)
 
         return new Promise((resolve,reject) => {job['proc'] = child_process.exec(
             args.join(' '),(err,stdout,stderr) => {job['proc'] = undefined; resolve(err)}
