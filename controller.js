@@ -50,12 +50,16 @@ class Controller {
     }
 
     exec(args, logPath, id) {
-        args = args.concat(['2>&1',`>${logPath}`])
         var job = this.jobs[id]
 
-        return new Promise((resolve,reject) => {job['proc'] = child_process.exec(
-            args.join(' '),(err,stdout,stderr) => {job['proc'] = undefined; resolve(err)}
-        )})
+        return new Promise((resolve,reject) => {
+            var logStream = fs.createWriteStream(logPath , {flags: 'a'});
+            job['proc'] = child_process.exec(
+                args.join(' '),(err,stdout,stderr) => {job['proc'] = undefined; resolve(err)}
+            )
+            job['proc'].stdout.pipe(logStream)
+            job['proc'].stderr.pipe(logStream)
+        })
     }
 
     async start(id) {
