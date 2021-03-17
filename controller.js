@@ -55,7 +55,7 @@ class Controller {
         return new Promise((resolve,reject) => {
             var logStream = fs.createWriteStream(logPath , {flags: 'a'});
             job['proc'] = child_process.exec(
-                args.join(' '),{maxBuffer: 20*1024*1024},(err,stdout,stderr) => {job['proc'] = undefined; resolve(err)}
+                args.join(' '),{maxBuffer: 100*1024*1024},(err,stdout,stderr) => {job['proc'] = undefined; resolve(err)}
             )
             job['proc'].stdout.on('data',(data) => {
                 logStream.write(data)
