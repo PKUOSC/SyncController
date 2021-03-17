@@ -57,8 +57,12 @@ class Controller {
             job['proc'] = child_process.exec(
                 args.join(' '),(err,stdout,stderr) => {job['proc'] = undefined; resolve(err)}
             )
-            job['proc'].stdout.pipe(logStream)
-            job['proc'].stderr.pipe(logStream)
+            job['proc'].stdout.on('data',(data) => {
+                logStream.write(data)
+            })
+            job['proc'].stderr.on('data',(data) => {
+                logStream.write(data)
+            })
         })
     }
 

@@ -106,3 +106,4 @@ dist
 # jsons
 config.json
 status.json
+test.js
