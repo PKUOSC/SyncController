@@ -11,7 +11,7 @@ const queue = require("async").queue;
 function getLogPath(id) {
     fs.mkdirSync(path.join(config.log_dir,id),{recursive:true})
     return path.join(config.log_dir,id,
-        `${dateformat(new Date(),'yyyy-mm-dd-hh-mm-ss')}.log`)
+        `${dateformat(new Date(),'yyyy-mm-dd-HH-MM-ss')}.log`)
 }
 
 function placeholder() {}
