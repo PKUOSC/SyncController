@@ -101,7 +101,10 @@ Here is an example of full configuration
             "metadata": {
                 "name": "Manjaro",
                 "url": "/manjaro/"
-            }
+            },
+            "file-custom": [
+                "alias /abc/def/;"
+            ]
         },
         {  
             "id": "opensuse",
