@@ -138,6 +138,20 @@ Here is an example of full configuration
 }
 ```
 
+Attention: `metadata` in a mirror is used to render mirror list.
+
+here is an example:
+
+```
+"metadata": {
+    "url": "/ubuntu/",
+    "name": "Ubuntu",
+    "help": "Ubuntu"
+}
+```
+
+The `help` should satisfy the requirement in website/src/components/help/`Ubuntu`.vue currently
+
 Be aware:
 
 * `mirrors` stores the list of sync jobs, in which `schedule` is a cron-style string indicating frequency ([more info](https://github.com/node-schedule/node-schedule)). We implemented two providers, `rsync` and `shell`, you can use them as the way shown above.
