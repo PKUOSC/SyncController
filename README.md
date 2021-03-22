@@ -26,6 +26,7 @@ CREATE TABLE `status`(
     `lastSyncTime` BIGINT UNSIGNED DEFAULT 0,
     `nextSyncTime` BIGINT UNSIGNED DEFAULT 0,
     `diskUsage` VARCHAR(30) DEFAULT '',
+    `logPath` VARCHAR(30) DEFAULT '',
     PRIMARY KEY (`index`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 ```
 
