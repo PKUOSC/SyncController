@@ -57,16 +57,20 @@ class Controller {
             this.nginx_conf += 'server {\n'
             this.nginx_conf += `\tlisten ${config['nginx-index-port']};\n`
             this.nginx_conf += `\tlisten [::]:${config['nginx-index-port']};\n`
-            for (var i in config.mirrors) {
+            this.nginx_conf += '\troot /data/repos/;\n'
+	    for (var i in config.mirrors) {
                 // init nginx settings
                 var t = config.mirrors[i]
                 console.log(`generating nginx configure for ${t.id}`)
-                if (t.hasOwnProperty('files') && t.hasOwnProperty('metadata') && t.metadata.hasOwnProperty('url')) {
+                if (t.hasOwnProperty('file-show') && t['file-show'] === false) {
+		    continue
+		}
+		if (t.hasOwnProperty('metadata') && t.metadata.hasOwnProperty('url')) {
                     this.nginx_conf += `\tlocation ${t.metadata.url} {\n`
-                    if (t.files.hasOwnProperty('custom')) {
-                        for (var j in t.custom) {
-                            this.nginx_conf += `\t\t${t.files.custom[j]}`
-                            if (t.files.custom[j].endsWith(';') === false) {
+                    if (t.hasOwnProperty('file-custom')) {
+                        for (var j in t['file-custom']) {
+                            this.nginx_conf += `\t\t${t['file-custom'][j]}`
+                            if (t['file-custom'][j].endsWith(';') === false) {
                                 t.nginx_conf += ';'
                             }
                             t.nginx_conf += '\n'
