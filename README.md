@@ -97,6 +97,10 @@ Here is an example of full configuration
             "provider": "rsync",
             "params": {
                 "url": "rsync://mirror.yandex.ru/mirrors/manjaro/"
+            },
+            "metadata": {
+                "name": "Manjaro",
+                "url": "/manjaro/"
             }
         },
         {  
