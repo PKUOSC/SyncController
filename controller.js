@@ -23,15 +23,18 @@ class Controller {
         this.run_queue = queue(
             (fun,next)=>{fun(next)},
             config.concurrency);
-
+	
+	this.static_mirror_list = {}
         for (var i in config.mirrors) {
             // init database entry
             var t = config.mirrors[i]
 
             
             console.log(`adding job ${t.id}`);
-
-            (async (id)=>{
+	    if (t.hasOwnProperty('metadata')) {
+		this.static_mirror_list[t.id] = t.metadata
+	    }
+	    (async (id)=>{
                 if(await db.exists(id)) {
                     if(await db.get('state',id)==='sync') {
                         db.set('state','error',id)

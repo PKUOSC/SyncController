@@ -6,6 +6,11 @@ const db = require("./db");
 
 module.exports = () => {
     const app = express();
+    app.route('/mirrors').all(nocache()).get(
+    	async (req,res) => {
+	    res.json(controller.static_mirror_list) 
+	}
+    )
 
     app.route('/status').all(nocache()).get(
         async (req,res) => {res.json(await db.getStatus())}
