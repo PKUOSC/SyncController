@@ -149,9 +149,12 @@ here is an example:
 "metadata": {
     "url": "/ubuntu/",
     "name": "Ubuntu",
-    "help": "Ubuntu"
+    "help": "Ubuntu",
+    "describe": "A Ubuntu mirror"
 }
 ```
+
+The `describe` will show when your mouse hover on the link.
 
 The `help` should satisfy the requirement in website/src/components/help/`Ubuntu`.vue currently
 
