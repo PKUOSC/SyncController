@@ -191,3 +191,5 @@ We also provides systemd service.
 - [ ] hot reload config (get/update)
 - [ ] restart(kill all running job & restart)
 - [x] rsync provider
+- [ ] add dynamic proxy function => tip: use nginx_http_dyups_module in nginx and dynamicly change upstream
+- [ ] may need a slave sync controller run on the second machine to avoid sync the same mirror at a same time
