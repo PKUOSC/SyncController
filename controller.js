@@ -26,11 +26,18 @@ class Controller {
         this.run_queue = queue(
             (fun, next) => { fun(next) },
             config.concurrency);
+        
+        var provider_all_params = "";
+	for (var i in config.mirrors) {
+            if (config.mirrors[i].id=="all") provider_all_params = config.mirrors[i].params;
+        }
 
         this.static_mirror_list = {}
         for (var i in config.mirrors) {
             // init database entry
             var t = config.mirrors[i]
+            if (t.id=="all") { continue; }
+	    
 
             console.log(`adding job ${t.id}`)
             if (t.hasOwnProperty('metadata')) {
@@ -46,7 +53,13 @@ class Controller {
                 }
             })(t.id);
 
-            this.jobs[t.id] = providers[t.provider](t.params, t.id)
+	    if (provider_all_params=="") {
+                this.jobs[t.id] = providers[t.provider](t.params, t.id, provider_all_params)
+	    } else {
+		this.jobs[t.id] = providers["rsync"](t.params, t.id, provider_all_params)
+	    }
+	    console.log(`Sync cmd: ${this.jobs[t.id]}`);
+	    console.log(this.jobs[t.id]);
             this.jobs[t.id]['sched'] = schedule.scheduleJob(
                 t.schedule,
                 ((id) => { return () => { this.start(id); } })(t.id));

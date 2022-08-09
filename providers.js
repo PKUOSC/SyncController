@@ -10,9 +10,16 @@ const fs = require('fs')
  */
 
 module.exports = {
-    'rsync': (params,id) => {
+    'rsync': (repo_params,id,provider_all_params) => {
         args = [rsync.command]
 
+        if (provider_all_params=="") {
+	    var params = repo_params;
+            args.push(params.url);
+	} else {
+            var params = provider_all_params;
+	    args.push(params.url+"/"+id + "/")
+	}
         if(params.hasOwnProperty('exclude')) {
             args.push(`--exclude=${params.exclude}`)
         }
@@ -20,8 +27,8 @@ module.exports = {
             args.push(`--bwlimit=${params.bwlimit}`)
         }
         
-        args.push(params.url)
-        args.push(params.dest || `${path.join(config.repo_dir,id)}`)
+        //args.push(params.url)
+        args.push(repo_params.dest || `${path.join(config.repo_dir,id)}`)
 
         return { args, after: async (err) => {
             if(!err) {
@@ -30,8 +37,8 @@ module.exports = {
             }
         }}
     },
-    'shell': (params,id) => {
-        args = [params.cmd]
+    'shell': (repo_params,id,provider_all_params) => {
+        args = [repo_params.cmd]
         return { args }
     }
 }

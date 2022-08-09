@@ -4,7 +4,7 @@ This repo provides simple sync job control.
 
 ## Database
 
-Default table name: `mirrors`
+Default database name: `mirrors`
 
 Columns:
 
@@ -26,7 +26,7 @@ CREATE TABLE `status`(
     `lastSyncTime` BIGINT UNSIGNED DEFAULT 0,
     `nextSyncTime` BIGINT UNSIGNED DEFAULT 0,
     `diskUsage` VARCHAR(30) DEFAULT '',
-    `logPath` VARCHAR(30) DEFAULT '',
+    `logPath` VARCHAR(100) DEFAULT '',
     PRIMARY KEY (`index`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 ```
 

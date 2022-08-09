@@ -5,8 +5,8 @@ After=network.target
 [Service]
 User=syncd
 Restart=on-failure
-WorkingDirectory=/data/backend-ng
-ExecStart=node /data/backend-ng/index.js
+WorkingDirectory=/data/SyncController
+ExecStart=node /data/SyncController/index.js
 
 [Install]
 WantedBy=multi-user.target
