@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "async": "^3.2.0",
+    "async": "^3.2.2",
     "async-lock": "^1.2.8",
     "dateformat": "^4.5.1",
     "express": "^4.17.1",
