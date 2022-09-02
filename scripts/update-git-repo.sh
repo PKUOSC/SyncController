@@ -8,7 +8,7 @@ else
 	cd $1
 	returnStatus=$(git remote update)
 fi
-	
+echo $returnStatus	
 chmod 755 -R $1
 echo "Success"
 exit 0

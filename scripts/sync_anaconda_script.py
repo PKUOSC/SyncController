@@ -24,17 +24,18 @@ WORKING_DIR = "/data/repos/anaconda"
 
 CONDA_REPOS = ("main", "free", "r", "msys2")
 CONDA_ARCHES = (
-    "noarch", "linux-64", "linux-32", "linux-armv6l", "linux-armv7l",
-    "linux-ppc64le", "osx-64", "osx-32", "win-64", "win-32"
+    "noarch", "linux-64", "linux-32", "linux-aarch64", "linux-armv6l", "linux-armv7l",
+    "linux-ppc64le", "osx-64", "osx-32", "osx-arm64", "win-64", "win-32"
 )
 
 CONDA_CLOUD_REPOS = (
-    "conda-forge/linux-64", "conda-forge/osx-64", "conda-forge/win-64", "conda-forge/noarch",
+    "conda-forge/linux-64", "conda-forge/linux-aarch64", "conda-forge/osx-64", "conda-forge/osx-arm64", "conda-forge/win-64", "conda-forge/noarch",
     "msys2/linux-64", "msys2/win-64", "msys2/noarch",
-    "rapidsai/linux-64", "rapidsai/noarch",
-    "bioconda/linux-64", "bioconda/osx-64", "bioconda/win-64", "bioconda/noarch",
+    "rapidsai/linux-64", "rapidsai/linux-aarch64", "rapidsai/noarch",
+    "bioconda/linux-64", "bioconda/linux-aarch64", "bioconda/osx-64", "bioconda/win-64", "bioconda/noarch",
     "menpo/linux-64", "menpo/osx-64", "menpo/win-64", "menpo/win-32", "menpo/noarch",
     "pytorch/linux-64", "pytorch/osx-64", "pytorch/win-64", "pytorch/win-32", "pytorch/noarch",
+    "pytorch-lts/linux-64", "pytorch-lts/win-64", "pytorch-lts/noarch",
     "pytorch-test/linux-64", "pytorch-test/osx-64", "pytorch-test/win-64", "pytorch-test/win-32", "pytorch-test/noarch",
     "stackless/linux-64", "stackless/win-64", "stackless/win-32", "stackless/linux-32", "stackless/osx-64", "stackless/noarch",
     "fermi/linux-64", "fermi/osx-64", "fermi/win-64", "fermi/noarch",
@@ -50,7 +51,7 @@ CONDA_CLOUD_REPOS = (
     "psi4/linux-64", "psi4/osx-64", "psi4/win-64", "psi4/noarch",
     "Paddle/linux-64", "Paddle/linux-32", "Paddle/osx-64", "Paddle/win-64", "Paddle/win-32", "Paddle/noarch",
     "deepmodeling/linux-64", "deepmodeling/noarch",
-    "numba/linux-64", "numba/linux-32", "numba/osx-64", "numba/win-64", "numba/win-32", "numba/noarch",
+    "numba/linux-64", "numba/linux-aarch64", "numba/linux-32", "numba/osx-64", "numba/win-64", "numba/win-32", "numba/noarch",
     "numba/label/dev/win-64", "numba/label/dev/noarch",
     "pyviz/linux-64", "pyviz/linux-32", "pyviz/win-64", "pyviz/win-32", "pyviz/osx-64", "pyviz/noarch",
     "dglteam/linux-64", "dglteam/win-64", "dglteam/osx-64", "dglteam/noarch",
@@ -62,6 +63,7 @@ CONDA_CLOUD_REPOS = (
     "c4aarch64/linux-aarch64", "c4aarch64/noarch",
     "pytorch3d/linux-64", "pytorch3d/noarch",
     "idaholab/linux-64", "idaholab/noarch",
+    "MindSpore/linux-64", "MindSpore/linux-aarch64", "MindSpore/osx-arm64", "MindSpore/osx-64", "MindSpore/win-64",
 )
 
 EXCLUDED_PACKAGES = (
@@ -72,7 +74,7 @@ EXCLUDED_PACKAGES = (
 TIMEOUT_OPTION = (7, 10)
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.ERROR,
     format="[%(asctime)s] [%(levelname)s] %(message)s",
 )
 
@@ -206,6 +208,8 @@ def sync_installer(repo_url, local_dir: Path):
                 continue
             fname = tds[0].find('a').text
             md5 = tds[3].text
+            if md5 == '<directory>' or len(md5) != 32:
+                continue
             yield (fname, md5)
 
     for filename, md5 in remote_list():
