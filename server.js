@@ -23,8 +23,10 @@ module.exports = () => {
 
     app.route('/start/:id').all(nocache()).get(
         async (req,res) => {
-            controller.start(req.params.id)
-            .then(()=>{res.json({"status":"ok"})})
+	    if (await db.exists(req.params.id)) {
+                controller.start(req.params.id)
+                .then(()=>{res.json({"status":"ok"})})
+            }
         }
     )
 

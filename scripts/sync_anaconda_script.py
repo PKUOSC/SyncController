@@ -74,7 +74,7 @@ EXCLUDED_PACKAGES = (
 TIMEOUT_OPTION = (7, 10)
 
 logging.basicConfig(
-    level=logging.ERROR,
+    level=logging.INFO,
     format="[%(asctime)s] [%(levelname)s] %(message)s",
 )
 

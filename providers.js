@@ -26,7 +26,12 @@ module.exports = {
         if(params.hasOwnProperty('bwlimit')) {
             args.push(`--bwlimit=${params.bwlimit}`)
         }
-        
+        if(params.hasOwnProperty('password_file')) {
+            args.push(`--password-file=${params.password_file}`)
+        }
+        if(params.hasOwnProperty('ssh')) {
+            args.push(`-e ${params.ssh}`)
+        }
         //args.push(params.url)
         args.push(repo_params.dest || `${path.join(config.repo_dir,id)}`)
 

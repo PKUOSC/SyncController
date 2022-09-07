@@ -98,6 +98,20 @@ class Controller {
             
             fs.writeFileSync('./nginx_index.conf', this.nginx_conf)
         }
+  
+        if (config.hasOwnProperty('rsyncd-port')) {
+            this.rsyncd_conf = ''
+	    this.rsyncd_conf += ''
+	    for (var i in config.mirrors) {
+	        var t = config.mirrors[i]
+	        console.log(`generating rsyncd configure for ${t.id}`)
+	        this.rsyncd_conf += `[${t.id}]\n`
+	        this.rsyncd_conf += `comment = ${t.metadata.describe}\n`
+	        this.rsyncd_conf += 'path = ' + (t.dest || `${path.join(config.repo_dir,t.id)}`) + '\n'
+		this.rsyncd_conf += '\n'
+	    }
+	    fs.writeFileSync('./rsyncd.conf', this.rsyncd_conf)
+        }
     }
 
     exec(args, logPath, id) {
@@ -106,7 +120,7 @@ class Controller {
         return new Promise((resolve, reject) => {
             var logStream = fs.createWriteStream(logPath, { flags: 'a' });
             job['proc'] = child_process.exec(
-                args.join(' '), { maxBuffer: 100 * 1024 * 1024 }, (err, stdout, stderr) => { job['proc'] = undefined; resolve(err) }
+                args.join(' '), { maxBuffer: 1024 * 1024 * 1024 }, (err, stdout, stderr) => { job['proc'] = undefined; resolve(err) }
             )
             job['proc'].stdout.on('data', (data) => {
                 logStream.write(data)
