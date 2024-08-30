@@ -11,7 +11,14 @@ const fs = require('fs')
 
 module.exports = {
     'rsync': (repo_params,id,provider_all_params) => {
-        args = [rsync.command]
+	var params = repo_params;
+	console.log(params)
+	if (params.hasOwnProperty('env')) {
+	    args = [`${params.env} `]
+	} else {
+	    args = []
+	}
+        args.push(rsync.command)
 
         if (provider_all_params=="") {
 	    var params = repo_params;
@@ -38,7 +45,7 @@ module.exports = {
         return { args, after: async (err) => {
             if(!err) {
                 out = fs.readFileSync(await db.get('logPath',id))
-                db.set('diskUsage',(/Total file size: (.*) bytes/).exec(out)[1],id)
+                //db.set('diskUsage',(/Total file size: (.*) bytes/).exec(out)[1],id)
             }
         }}
     },

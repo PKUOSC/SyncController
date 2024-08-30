@@ -34,7 +34,7 @@ class DB {
     }
 
     insert(id) {
-        return this.query(`INSERT INTO ${this.table_name} VALUES (0,'${id}','done',DEFAULT,DEFAULT,DEFAULT,DEFAULT);`)
+        return this.query(`INSERT INTO ${this.table_name} VALUES (0,'${id}','done',DEFAULT,DEFAULT,DEFAULT,DEFAULT, "error");`)
     }
 
     getStatus() {
