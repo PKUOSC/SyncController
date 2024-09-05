@@ -2,6 +2,7 @@ import hashlib
 import json
 import logging
 import os
+import errno
 import random
 import shutil
 import subprocess as sp
@@ -20,6 +21,7 @@ DEFAULT_CONDA_CLOUD_BASE = "https://conda.anaconda.org"
 CONDA_REPO_BASE_URL = os.getenv("CONDA_REPO_URL", "https://repo.continuum.io")
 CONDA_CLOUD_BASE_URL = os.getenv("CONDA_COULD_URL", "https://conda.anaconda.org")
 
+#WORKING_DIR = os.getenv("TUNASYNC_WORKING_DIR")
 WORKING_DIR = "/data/repos/anaconda"
 
 CONDA_REPOS = ("main", "free", "r", "msys2")
@@ -34,7 +36,7 @@ CONDA_CLOUD_REPOS = (
     "rapidsai/linux-64", "rapidsai/linux-aarch64", "rapidsai/noarch",
     "bioconda/linux-64", "bioconda/linux-aarch64", "bioconda/osx-64", "bioconda/win-64", "bioconda/noarch",
     "menpo/linux-64", "menpo/osx-64", "menpo/win-64", "menpo/win-32", "menpo/noarch",
-    "pytorch/linux-64", "pytorch/osx-64", "pytorch/win-64", "pytorch/win-32", "pytorch/noarch",
+    "pytorch/linux-64", "pytorch/osx-64", "pytorch/osx-arm64", "pytorch/win-64", "pytorch/win-32", "pytorch/noarch",
     "pytorch-lts/linux-64", "pytorch-lts/win-64", "pytorch-lts/noarch",
     "pytorch-test/linux-64", "pytorch-test/osx-64", "pytorch-test/win-64", "pytorch-test/win-32", "pytorch-test/noarch",
     "stackless/linux-64", "stackless/win-64", "stackless/win-32", "stackless/linux-32", "stackless/osx-64", "stackless/noarch",
@@ -49,7 +51,7 @@ CONDA_CLOUD_REPOS = (
     "ursky/linux-64", "ursky/osx-64", "ursky/noarch",
     "matsci/linux-64", "matsci/osx-64", "matsci/win-64", "matsci/noarch",
     "psi4/linux-64", "psi4/osx-64", "psi4/win-64", "psi4/noarch",
-    "Paddle/linux-64", "Paddle/linux-32", "Paddle/osx-64", "Paddle/win-64", "Paddle/win-32", "Paddle/noarch",
+    "Paddle/linux-64", "Paddle/linux-32", "Paddle/osx-64", "Paddle/osx-arm64","Paddle/win-64", "Paddle/win-32", "Paddle/noarch",
     "deepmodeling/linux-64", "deepmodeling/noarch",
     "numba/linux-64", "numba/linux-aarch64", "numba/linux-32", "numba/osx-64", "numba/win-64", "numba/win-32", "numba/noarch",
     "numba/label/dev/win-64", "numba/label/dev/noarch",
@@ -63,7 +65,7 @@ CONDA_CLOUD_REPOS = (
     "c4aarch64/linux-aarch64", "c4aarch64/noarch",
     "pytorch3d/linux-64", "pytorch3d/noarch",
     "idaholab/linux-64", "idaholab/noarch",
-    "MindSpore/linux-64", "MindSpore/linux-aarch64", "MindSpore/osx-arm64", "MindSpore/osx-64", "MindSpore/win-64",
+    "MindSpore/linux-64", "MindSpore/linux-aarch64", "MindSpore/osx-arm64", "MindSpore/osx-64", "MindSpore/win-64", "MindSpore/noarch",
 )
 
 EXCLUDED_PACKAGES = (
@@ -72,6 +74,9 @@ EXCLUDED_PACKAGES = (
 
 # connect and read timeout value
 TIMEOUT_OPTION = (7, 10)
+
+# Generate gzip archive for json files, size threshold
+GEN_METADATA_JSON_GZIP_THRESHOLD = 1024 * 1024
 
 logging.basicConfig(
     level=logging.INFO,
@@ -95,14 +100,26 @@ def md5_check(file: Path, md5: str = None):
             m.update(buf)
     return m.hexdigest() == md5
 
+def sha256_check(file: Path, sha256: str = None):
+    m = hashlib.sha256()
+    with file.open('rb') as f:
+        while True:
+            buf = f.read(1*1024*1024)
+            if not buf:
+                break
+            m.update(buf)
+    return m.hexdigest() == sha256
 
-def curl_download(remote_url: str, dst_file: Path, md5: str = None):
+
+def curl_download(remote_url: str, dst_file: Path, sha256: str = None, md5: str = None):
     sp.check_call([
         "curl", "-o", str(dst_file),
         "-sL", "--remote-time", "--show-error",
         "--fail", "--retry", "10", "--speed-time", "15",
         "--speed-limit", "5000", remote_url,
     ])
+    if sha256 and (not sha256_check(dst_file, sha256)):
+        return "SHA256 mismatch"
     if md5 and (not md5_check(dst_file, md5)):
         return "MD5 mismatch"
 
@@ -140,7 +157,14 @@ def sync_repo(repo_url: str, local_dir: Path, tmpdir: Path, delete: bool):
         if meta['name'] in EXCLUDED_PACKAGES:
             continue
 
-        file_size, md5 = meta['size'], meta['md5']
+        file_size = meta['size']
+        # prefer sha256 over md5
+        sha256 = None
+        md5 = None
+        if 'sha256' in meta:
+            sha256 = meta['sha256']
+        elif 'md5' in meta:
+            md5 = meta['md5']
         total_size += file_size
 
         pkg_url = '/'.join([repo_url, filename])
@@ -161,7 +185,7 @@ def sync_repo(repo_url: str, local_dir: Path, tmpdir: Path, delete: bool):
         for retry in range(3):
             logging.info("Downloading {}".format(filename))
             try:
-                err = curl_download(pkg_url, dst_file_wip, md5=md5)
+                err = curl_download(pkg_url, dst_file_wip, sha256=sha256, md5=md5)
                 if err is None:
                     dst_file_wip.rename(dst_file)
             except sp.CalledProcessError:
@@ -170,12 +194,34 @@ def sync_repo(repo_url: str, local_dir: Path, tmpdir: Path, delete: bool):
                 break
             logging.error("Failed to download {}: {}".format(filename, err))
 
+    if os.path.getsize(tmp_repodata) > GEN_METADATA_JSON_GZIP_THRESHOLD:
+        sp.check_call(["gzip", "--no-name", "--keep", "--", str(tmp_repodata)])
+        shutil.move(str(tmp_repodata) + ".gz", str(local_dir / "repodata.json.gz"))
+    else:
+        # If the gzip file is not generated, remove the dangling gzip archive
+        try:
+            os.remove(str(local_dir / "repodata.json.gz"))
+        except OSError as e:
+            if e.errno != errno.ENOENT:
+                raise
 
     shutil.move(str(tmp_repodata), str(local_dir / "repodata.json"))
     shutil.move(str(tmp_bz2_repodata), str(local_dir / "repodata.json.bz2"))
+    tmp_current_repodata_gz_gened = False
     if tmp_current_repodata.is_file():
+        if os.path.getsize(tmp_current_repodata) > GEN_METADATA_JSON_GZIP_THRESHOLD:
+            sp.check_call(["gzip", "--no-name", "--keep", "--", str(tmp_current_repodata)])
+            shutil.move(str(tmp_current_repodata) + ".gz", str(local_dir / "current_repodata.json.gz"))
+            tmp_current_repodata_gz_gened = True
         shutil.move(str(tmp_current_repodata), str(
             local_dir / "current_repodata.json"))
+    if not tmp_current_repodata_gz_gened:
+        try:
+            # If the gzip file is not generated, remove the dangling gzip archive
+            os.remove(str(local_dir / "current_repodata.json.gz"))
+        except OSError as e:
+            if e.errno != errno.ENOENT:
+                raise
 
     if delete:
         local_filelist = []
@@ -207,12 +253,12 @@ def sync_installer(repo_url, local_dir: Path):
             if len(tds) != 4:
                 continue
             fname = tds[0].find('a').text
-            md5 = tds[3].text
-            if md5 == '<directory>' or len(md5) != 32:
+            sha256 = tds[3].text
+            if sha256 == '<directory>' or len(sha256) != 64:
                 continue
-            yield (fname, md5)
+            yield (fname, sha256)
 
-    for filename, md5 in remote_list():
+    for filename, sha256 in remote_list():
         pkg_url = "/".join([repo_url, filename])
         dst_file = local_dir / filename
         dst_file_wip = local_dir / ('.downloading.' + filename)
@@ -229,7 +275,7 @@ def sync_installer(repo_url, local_dir: Path):
 
             # Do content verification on ~5% of files (see issue #25)
             if (not len_avail or remote_filesize == local_filesize) and remote_date.timestamp() == local_mtime and \
-                    (random.random() < 0.95 or md5_check(dst_file, md5)):
+                    (random.random() < 0.95 or sha256_check(dst_file, sha256)):
                 logging.info("Skipping {}".format(filename))
 
                 # Stop the scanning if the most recent version is present
@@ -246,7 +292,7 @@ def sync_installer(repo_url, local_dir: Path):
             logging.info("Downloading {}".format(filename))
             err = ''
             try:
-                err = curl_download(pkg_url, dst_file_wip, md5=md5)
+                err = curl_download(pkg_url, dst_file_wip, sha256=sha256)
                 if err is None:
                     dst_file_wip.rename(dst_file)
             except sp.CalledProcessError:
@@ -309,6 +355,7 @@ def main():
             shutil.rmtree(tmpdir)
 
     print("Total size is", sizeof_fmt(size_statistics, suffix=""))
+    print("Total file size: {} bytes".format(size_statistics))
 
 if __name__ == "__main__":
     main()
