@@ -30,6 +30,14 @@ module.exports = () => {
         }
     )
 
+    app.route('/startall').all(nocache()).get(
+        async (req,res) => {
+                controller.startall()
+                .then(()=>{res.json({"status":"ok"})})
+        }
+    )
+
+
     app.route('/log/:id').all(nocache()).get(
         async (req,res) => {
             res.sendFile(await db.get('logPath',req.params.id))

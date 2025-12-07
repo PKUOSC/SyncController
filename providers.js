@@ -39,6 +39,9 @@ module.exports = {
         if(params.hasOwnProperty('ssh')) {
             args.push(`-e ${params.ssh}`)
         }
+	if(params.hasOwnProperty('extras')) {
+            args.push(`${params.extras}`)
+        }
         //args.push(params.url)
         args.push(repo_params.dest || `${path.join(config.repo_dir,id)}`)
 

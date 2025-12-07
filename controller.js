@@ -40,7 +40,7 @@ class Controller {
 	    
 
             console.log(`adding job ${t.id}`)
-            if (t.hasOwnProperty('metadata')) {
+            if (t.hasOwnProperty('metadata') && t.metadata.visible!=false) {
                 this.static_mirror_list[t.id] = t.metadata
             }
             (async (id) => {
@@ -64,31 +64,31 @@ class Controller {
                 t.schedule,
                 ((id) => { return () => { this.start(id); } })(t.id));
         }
-	//schedule.scheduleJob("*/10 * * * *", (() => { return () => { this.searchall(); } })());
+	schedule.scheduleJob("*/30 * * * *", (() => { return () => { this.searchall(); } })());
 
         if (config.hasOwnProperty('nginx-index-port')) {
             this.nginx_conf = ''
             this.nginx_conf += 'server {\n'
             this.nginx_conf += `\tlisten ${config['nginx-index-port']};\n`
             this.nginx_conf += `\tlisten [::]:${config['nginx-index-port']};\n`
-            this.nginx_conf += '\troot /data/repos/;\n'
+            this.nginx_conf += '\troot /data1/repos/;\n'
             this.nginx_conf += `        location /pypi/simple/ {
-                alias /data/repos/pypi/web/simple/;
+                alias /data1/repos/pypi/web/simple/;
                 autoindex on;
                 autoindex_format json;
         }
         location /pypi/json/ {
-                alias /data/repos/pypi/web/json/;
+                alias /data1/repos/pypi/web/json/;
                 autoindex on;
                 autoindex_format json;
         }
         location /pypi/packages/ {
-                alias /data/repos/pypi/web/packages/;
+                alias /data1/repos/pypi/web/packages/;
                 autoindex on;
                 autoindex_format json;
         }
         location /pypi/pypi/ {
-                alias /data/repos/pypi/web/pypi/;
+                alias /data1/repos/pypi/web/pypi/;
                 autoindex on;
                 autoindex_format json;
         }\n`
@@ -128,7 +128,7 @@ class Controller {
 	        var t = config.mirrors[i]
 	        console.log(`generating rsyncd configure for ${t.id}`)
 	        this.rsyncd_conf += `[${t.id}]\n`
-	        this.rsyncd_conf += `comment = ${t.metadata.describe}\n`
+	        //this.rsyncd_conf += `comment = ${t.metadata.describe}\n`
 	        this.rsyncd_conf += 'path = ' + (t.params.dest || `${path.join(config.repo_dir,t.id)}`) + '\n'
 		this.rsyncd_conf += '\n'
 	    }
@@ -141,15 +141,18 @@ class Controller {
 
         return new Promise((resolve, reject) => {
             var logStream = fs.createWriteStream(logPath, { flags: 'a' });
-	    if(id == 'ubuntu'){
-                job['proc'] = child_process.exec(
-                    args.join(' ')+' ; '+ args.join(' '), { maxBuffer: 1024 * 1024 * 1024 , timeout: 1000*60*60*48}, (err, stdout, stderr) => { job['proc'] = undefined; resolve(err) }
-                )
-            }else{
-                job['proc'] = child_process.exec(
-                    args.join(' '), { maxBuffer: 1024 * 1024 * 1024 , timeout: 1000*60*60*48}, (err, stdout, stderr) => { job['proc'] = undefined; resolve(err) }
-                )
-	    }
+	    job['proc'] = child_process.exec(
+	        args.join(' ')+' ; '+ args.join(' '), { maxBuffer: 1024 * 1024 * 1024 * 1024 , timeout: 1000*60*60*48}, (err, stdout, stderr) => { job['proc'] = undefined; resolve(err) }
+            )
+	    //if(id == 'ubuntu'){
+            //    job['proc'] = child_process.exec(
+            //        args.join(' ')+' ; '+ args.join(' '), { maxBuffer: 1024 * 1024 * 1024 , timeout: 1000*60*60*48}, (err, stdout, stderr) => { job['proc'] = undefined; resolve(err) }
+            //    )
+            //}else{
+            //    job['proc'] = child_process.exec(
+            //        args.join(' '), { maxBuffer: 1024 * 1024 * 1024 , timeout: 1000*60*60*48}, (err, stdout, stderr) => { job['proc'] = undefined; resolve(err) }
+            //    )
+	    //}
             job['proc'].stdout.on('data', (data) => {
                 logStream.write(data)
             })
@@ -215,12 +218,22 @@ class Controller {
     async searchall(){
         for (var i in config.mirrors) {
 	    var id = config.mirrors[i].id;
+	    if (id=="all") { continue; }
 	    if (await db.get('state', id) === 'error' && this.run_queue.length() < config.concurrency -1) {
 		console.log(`rerunning job ${id}`);
 		await this.start(id);
 	    } 
         }
     }
+    async startall(){
+        for (var i in config.mirrors) {
+	
+            var id = config.mirrors[i].id;
+		if (id=="all") { continue; }
+                await this.start(id);
+        }
+    }
+
 }
 
 module.exports = new Controller()
